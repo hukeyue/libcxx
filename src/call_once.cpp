@@ -27,6 +27,13 @@ _LIBCPP_BEGIN_NAMESPACE_STD
 #if _LIBCPP_HAS_THREADS
 static constinit __libcpp_mutex_t mut  = _LIBCPP_MUTEX_INITIALIZER;
 static constinit __libcpp_condvar_t cv = _LIBCPP_CONDVAR_INITIALIZER;
+#if _LIBCPP_HAS_THREAD_API_WIN32 && _WIN32_WINNT < 0x0600
+static constinit __libcpp_exec_once_flag lock_once_ = _LIBCPP_EXEC_ONCE_INITIALIZER;
+static void static_lock_init() {
+  __libcpp_mutex_init(&mut);
+  __libcpp_condvar_init(&cv);
+}
+#endif
 #endif
 
 void __call_once(volatile once_flag::_State_type& flag, void* arg, void (*func)(void*)) {
@@ -42,6 +49,9 @@ void __call_once(volatile once_flag::_State_type& flag, void* arg, void (*func)(
 
 #else // !_LIBCPP_HAS_THREADS
 
+#if _LIBCPP_HAS_THREAD_API_WIN32 && _WIN32_WINNT < 0x0600
+  __libcpp_execute_once(&lock_once_, static_lock_init);
+#endif
   __libcpp_mutex_lock(&mut);
   while (flag == once_flag::_Pending)
     __libcpp_condvar_wait(&cv, &mut);

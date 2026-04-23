@@ -25,7 +25,11 @@ class _LIBCPP_EXPORTED_FROM_ABI _LIBCPP_CAPABILITY("mutex") mutex {
   __libcpp_mutex_t __m_ = _LIBCPP_MUTEX_INITIALIZER;
 
 public:
+#  if !(_LIBCPP_HAS_THREAD_API_WIN32 && _WIN32_WINNT < 0x0600)
   _LIBCPP_HIDE_FROM_ABI _LIBCPP_CONSTEXPR mutex() = default;
+#  else
+  _LIBCPP_HIDE_FROM_ABI mutex() _NOEXCEPT;
+#  endif
 
   mutex(const mutex&)            = delete;
   mutex& operator=(const mutex&) = delete;

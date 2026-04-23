@@ -111,7 +111,12 @@ static constinit __libcpp_mutex_t mut_back[__sp_mut_count] = {
     _LIBCPP_MUTEX_INITIALIZER, _LIBCPP_MUTEX_INITIALIZER, _LIBCPP_MUTEX_INITIALIZER, _LIBCPP_MUTEX_INITIALIZER,
     _LIBCPP_MUTEX_INITIALIZER, _LIBCPP_MUTEX_INITIALIZER, _LIBCPP_MUTEX_INITIALIZER, _LIBCPP_MUTEX_INITIALIZER};
 
-constexpr __sp_mut::__sp_mut(void* p) noexcept : __lx_(p) {}
+constexpr __sp_mut::__sp_mut(void* p) noexcept : __lx_(p) {
+#  if _LIBCPP_HAS_THREAD_API_WIN32 && _WIN32_WINNT < 0x0600
+  auto m = static_cast<__libcpp_mutex_t*>(__lx_);
+  __libcpp_mutex_init(m);
+#  endif
+}
 
 void __sp_mut::lock() noexcept {
   auto m = static_cast<__libcpp_mutex_t*>(__lx_);
@@ -121,7 +126,11 @@ void __sp_mut::lock() noexcept {
 void __sp_mut::unlock() noexcept { __libcpp_mutex_unlock(static_cast<__libcpp_mutex_t*>(__lx_)); }
 
 __sp_mut& __get_sp_mut(const void* p) {
+#  if _LIBCPP_HAS_THREAD_API_WIN32
+  static __sp_mut muts[__sp_mut_count] = {
+#  else
   static constinit __sp_mut muts[__sp_mut_count] = {
+#  endif
       &mut_back[0],  &mut_back[1],  &mut_back[2],  &mut_back[3],  &mut_back[4],  &mut_back[5],  &mut_back[6],
       &mut_back[7],  &mut_back[8],  &mut_back[9],  &mut_back[10], &mut_back[11], &mut_back[12], &mut_back[13],
       &mut_back[14], &mut_back[15], &mut_back[16], &mut_back[17], &mut_back[18], &mut_back[19], &mut_back[20],

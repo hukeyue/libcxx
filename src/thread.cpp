@@ -74,7 +74,13 @@ unsigned thread::hardware_concurrency() noexcept {
     return 0;
   return static_cast<unsigned>(result);
 #elif defined(_LIBCPP_WIN32API)
+#  if _WIN32_WINNT >= 0x0601
   return static_cast<unsigned>(GetActiveProcessorCount(ALL_PROCESSOR_GROUPS));
+#else
+  SYSTEM_INFO info;
+  GetSystemInfo(&info);
+  return info.dwNumberOfProcessors;
+#  endif
 #else // defined(CTL_HW) && defined(HW_NCPU)
   // TODO: grovel through /proc or check cpuid on x86 and similar
   // instructions on other architectures.

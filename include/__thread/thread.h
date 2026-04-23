@@ -194,6 +194,9 @@ _LIBCPP_HIDE_FROM_ABI void* __thread_proxy_cxx03(void* __vp) {
 
 class _LIBCPP_EXPORTED_FROM_ABI thread {
   __libcpp_thread_t __t_;
+#if _LIBCPP_HAS_THREAD_API_WIN32 && _WIN32_WINNT < 0x0600
+  __libcpp_thread_id __t_id_;
+#endif
 
   thread(const thread&);
   thread& operator=(const thread&);
@@ -215,7 +218,11 @@ public:
     _TSPtr __tsp(new __thread_struct);
     typedef tuple<_TSPtr, __decay_t<_Fp>, __decay_t<_Args>...> _Gp;
     unique_ptr<_Gp> __p(new _Gp(std::move(__tsp), std::forward<_Fp>(__f), std::forward<_Args>(__args)...));
-    int __ec = std::__libcpp_thread_create(&__t_, std::addressof(__thread_proxy<_Gp>), __p.get());
+#  if !(_LIBCPP_HAS_THREAD_API_WIN32 && _WIN32_WINNT < 0x0600)
+  int __ec = std::__libcpp_thread_create(&__t_, &__thread_proxy<_Gp>, __p.get());
+#  else
+  int __ec = std::__libcpp_thread_create(&__t_, &__t_id_, &__thread_proxy<_Gp>, __p.get());
+#  endif
     if (__ec == 0)
       __p.release();
     else
@@ -227,7 +234,13 @@ public:
     typedef __thread_invoke_pair<_Fp> _InvokePair;
     typedef unique_ptr<_InvokePair> _PairPtr;
     _PairPtr __pp(new _InvokePair(__f));
-    int __ec = std::__libcpp_thread_create(&__t_, &__thread_proxy_cxx03<_InvokePair>, __pp.get());
+#  if !(_LIBCPP_HAS_THREAD_API_WIN32 && _WIN32_WINNT < 0x0600)
+  int __ec = std::__libcpp_thread_create(&__t_, &__thread_proxy_cxx03<_InvokePair>
+ __pp.get());
+#  else
+  int __ec = std::__libcpp_thread_create(&__t_, &__t_id_, &__thread_proxy_cxx03<_I
+vokePair>, __pp.get());
+#  endif
     if (__ec == 0)
       __pp.release();
     else
@@ -236,8 +249,16 @@ public:
 #  endif
   ~thread();
 
+#if !(_LIBCPP_HAS_THREAD_API_WIN32 && _WIN32_WINNT < 0x0600)
   _LIBCPP_HIDE_FROM_ABI thread(thread&& __t) _NOEXCEPT : __t_(__t.__t_) { __t.__t_ = _LIBCPP_NULL_THREAD; }
+#else
+  _LIBCPP_HIDE_FROM_ABI thread(thread&& __t) _NOEXCEPT : __t_(__t.__t_), __t_id_(__t.__t_id_) {
+    __t.__t_    = _LIBCPP_NULL_THREAD;
+    __t.__t_id_ = 0;
+  }
+#endif
 
+#if !(_LIBCPP_HAS_THREAD_API_WIN32 && _WIN32_WINNT < 0x0600)
   _LIBCPP_HIDE_FROM_ABI thread& operator=(thread&& __t) _NOEXCEPT {
     if (!__libcpp_thread_isnull(&__t_))
       terminate();
@@ -245,13 +266,35 @@ public:
     __t.__t_ = _LIBCPP_NULL_THREAD;
     return *this;
   }
+#else
+  _LIBCPP_HIDE_FROM_ABI thread& operator=(thread&& __t) _NOEXCEPT {
+    if (!__libcpp_thread_isnull(&__t_))
+      terminate();
+    __t_        = __t.__t_;
+    __t_id_     = __t.__t_id_;
+    __t.__t_    = _LIBCPP_NULL_THREAD;
+    __t.__t_id_ = 0;
+    return *this;
+  }
+#endif
 
+#if !(_LIBCPP_HAS_THREAD_API_WIN32 && _WIN32_WINNT < 0x0600)
   _LIBCPP_HIDE_FROM_ABI void swap(thread& __t) _NOEXCEPT { std::swap(__t_, __t.__t_); }
+#else
+  _LIBCPP_HIDE_FROM_ABI void swap(thread& __t) _NOEXCEPT {
+    std::swap(__t_, __t.__t_);
+    std::swap(__t_id_, __t.__t_id_);
+  }
+#endif
 
   [[__nodiscard__]] _LIBCPP_HIDE_FROM_ABI bool joinable() const _NOEXCEPT { return !__libcpp_thread_isnull(&__t_); }
   void join();
   void detach();
+#if !(_LIBCPP_HAS_THREAD_API_WIN32 && _WIN32_WINNT < 0x0600)
   [[__nodiscard__]] _LIBCPP_HIDE_FROM_ABI id get_id() const _NOEXCEPT { return __libcpp_thread_get_id(&__t_); }
+#else
+  [[__nodiscard__]] _LIBCPP_HIDE_FROM_ABI id get_id() const _NOEXCEPT { return __t_id_; }
+#endif
   [[__nodiscard__]] _LIBCPP_HIDE_FROM_ABI native_handle_type native_handle() _NOEXCEPT { return __t_; }
 
   [[__nodiscard__]] static unsigned hardware_concurrency() _NOEXCEPT;

@@ -25,8 +25,19 @@ using __libcpp_timespec_t = ::timespec;
 //
 // Mutex
 //
+#if _WIN32_WINNT >= 0x0600
 typedef void* __libcpp_mutex_t;
-#define _LIBCPP_MUTEX_INITIALIZER 0
+#  define _LIBCPP_MUTEX_INITIALIZER 0
+#else
+#  if defined(_M_IX86) || defined(_M_ARM)
+typedef void* __libcpp_mutex_t[6];
+#  elif defined(_M_AMD64) || defined(_M_ARM64)
+typedef void* __libcpp_mutex_t[5];
+#  else
+#    error Unsupported architecture
+#  endif
+#  define _LIBCPP_MUTEX_INITIALIZER {}
+#endif
 
 #if defined(_WIN64)
 typedef void* __libcpp_recursive_mutex_t[5];
@@ -47,6 +58,10 @@ __libcpp_recursive_mutex_unlock(__libcpp_recursive_mutex_t* __m);
 
 _LIBCPP_EXPORTED_FROM_ABI int __libcpp_recursive_mutex_destroy(__libcpp_recursive_mutex_t* __m);
 
+#if _WIN32_WINNT < 0x0600
+_LIBCPP_EXPORTED_FROM_ABI int __libcpp_mutex_init(__libcpp_mutex_t* __m);
+#endif
+
 _LIBCPP_NO_THREAD_SAFETY_ANALYSIS _LIBCPP_EXPORTED_FROM_ABI int __libcpp_mutex_lock(__libcpp_mutex_t* __m);
 
 _LIBCPP_NO_THREAD_SAFETY_ANALYSIS _LIBCPP_EXPORTED_FROM_ABI bool __libcpp_mutex_trylock(__libcpp_mutex_t* __m);
@@ -58,8 +73,24 @@ _LIBCPP_EXPORTED_FROM_ABI int __libcpp_mutex_destroy(__libcpp_mutex_t* __m);
 //
 // Condition variable
 //
+#if _WIN32_WINNT >= 0x0600
 typedef void* __libcpp_condvar_t;
-#define _LIBCPP_CONDVAR_INITIALIZER 0
+#  define _LIBCPP_CONDVAR_INITIALIZER 0
+#else
+#  if defined(_M_IX86) || defined(_M_ARM)
+typedef void* __libcpp_condvar_t[4 + 2 + 6];
+#  elif defined(_M_AMD64) || defined(_M_ARM64)
+typedef void* __libcpp_condvar_t[2 + 2 + 5];
+#  else
+#    error Unsupported architecture
+#  endif
+#  define _LIBCPP_CONDVAR_INITIALIZER                                                                                  \
+    {}
+#endif
+
+#if _WIN32_WINNT < 0x0600
+_LIBCPP_EXPORTED_FROM_ABI int __libcpp_condvar_init(__libcpp_condvar_t* __cv);
+#endif
 
 _LIBCPP_EXPORTED_FROM_ABI int __libcpp_condvar_signal(__libcpp_condvar_t* __cv);
 
@@ -79,6 +110,7 @@ _LIBCPP_EXPORTED_FROM_ABI int __libcpp_condvar_destroy(__libcpp_condvar_t* __cv)
 typedef void* __libcpp_exec_once_flag;
 #define _LIBCPP_EXEC_ONCE_INITIALIZER 0
 
+_LIBCPP_EXPORTED_FROM_ABI int __libcpp_execute_once(__libcpp_exec_once_flag* __flag, void* arg, void (*__init_routine)(void*));
 _LIBCPP_EXPORTED_FROM_ABI int __libcpp_execute_once(__libcpp_exec_once_flag* __flag, void (*__init_routine)());
 
 //
@@ -100,9 +132,15 @@ _LIBCPP_EXPORTED_FROM_ABI bool __libcpp_thread_isnull(const __libcpp_thread_t* _
 
 _LIBCPP_EXPORTED_FROM_ABI int __libcpp_thread_create(__libcpp_thread_t* __t, void* (*__func)(void*), void* __arg);
 
+#if _WIN32_WINNT < 0x0600
+_LIBCPP_EXPORTED_FROM_ABI int __libcpp_thread_create(__libcpp_thread_t* __t, __libcpp_thread_id* __t_id, void* (*__func)(void*), void* __arg);
+#endif
+
 _LIBCPP_EXPORTED_FROM_ABI __libcpp_thread_id __libcpp_thread_get_current_id();
 
+#if _WIN32_WINNT >= 0x0600
 _LIBCPP_EXPORTED_FROM_ABI __libcpp_thread_id __libcpp_thread_get_id(const __libcpp_thread_t* __t);
+#endif
 
 _LIBCPP_EXPORTED_FROM_ABI int __libcpp_thread_join(__libcpp_thread_t* __t);
 

@@ -24,6 +24,10 @@ _LIBCPP_PUSH_MACROS
 
 _LIBCPP_BEGIN_NAMESPACE_STD
 
+#if _LIBCPP_HAS_THREAD_API_WIN32 && _WIN32_WINNT < 0x0600
+mutex::mutex() _NOEXCEPT { __libcpp_mutex_init(&__m_); }
+#endif
+
 // ~mutex is defined elsewhere
 
 void mutex::lock() {

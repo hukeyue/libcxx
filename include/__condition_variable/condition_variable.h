@@ -90,7 +90,11 @@ class _LIBCPP_EXPORTED_FROM_ABI condition_variable {
   __libcpp_condvar_t __cv_ = _LIBCPP_CONDVAR_INITIALIZER;
 
 public:
+#  if !(_LIBCPP_HAS_THREAD_API_WIN32 && _WIN32_WINNT < 0x0600)
   _LIBCPP_HIDE_FROM_ABI _LIBCPP_CONSTEXPR condition_variable() _NOEXCEPT = default;
+#  else
+  _LIBCPP_HIDE_FROM_ABI condition_variable() _NOEXCEPT;
+#  endif
 
 #  if _LIBCPP_HAS_TRIVIAL_CONDVAR_DESTRUCTION
   ~condition_variable() = default;
